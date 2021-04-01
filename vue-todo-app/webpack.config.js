@@ -7,10 +7,27 @@ const { merge } = require('webpack-merge')
 require('@babel/polyfill')
 
 module.exports = (env, opts) => {
+
   const config = {
+    mode: 'production',
     // 중복되는 옵션들..
     resolve: {
-      extensions: ['.vue', '.js']
+      extensions: ['.vue', '.js'],
+      // alias: {
+      //   path: require.resolve("path-browserify")
+      // },
+      fallback: {
+        // "fs": false,
+        // "tls": false,
+        // "net": false,
+        // "path": false,
+        // "zlib": false,
+        // "http": false,
+        // "https": false,
+        "stream": false,
+        "crypto": false,
+        "crypto-browserify": require.resolve('crypto-browserify'), //if you want to use this module also don't forget npm i crypto-browserify 
+      }
     },
     // 진입점
     entry: {
