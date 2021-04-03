@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const VueLoaderPlugin = require('vue-loader/lib/plugin')
 const CopyPlugin = require('copy-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
-const { merge } = require('webpack-merge')
+const merge = require('webpack-merge')
 require('@babel/polyfill')
 
 module.exports = (env, opts) => {
@@ -16,18 +16,18 @@ module.exports = (env, opts) => {
       // alias: {
       //   path: require.resolve("path-browserify")
       // },
-      fallback: {
-        // "fs": false,
-        // "tls": false,
-        // "net": false,
-        // "path": false,
-        // "zlib": false,
-        // "http": false,
-        // "https": false,
-        "stream": false,
-        "crypto": false,
-        "crypto-browserify": require.resolve('crypto-browserify'), //if you want to use this module also don't forget npm i crypto-browserify 
-      }
+      // fallback: {
+      //   // "fs": false,
+      //   // "tls": false,
+      //   // "net": false,
+      //   // "path": false,
+      //   // "zlib": false,
+      //   // "http": false,
+      //   // "https": false,
+      //   "stream": false,
+      //   "crypto": false,
+      //   "crypto-browserify": require.resolve('crypto-browserify'), //if you want to use this module also don't forget npm i crypto-browserify 
+      // }
     },
     // 진입점
     entry: {
@@ -70,32 +70,36 @@ module.exports = (env, opts) => {
         template: path.join(__dirname, 'index.html')
       }),
       new VueLoaderPlugin(),
-      new CopyPlugin({
-        patterns: [
-          {
-            from: 'assets/',
-            to: ''
-          }
-        ]
-      })
+      new CopyPlugin([
+        {
+          from: 'assets/',
+          to: ''
+        }
+      ])
     ]
   }
   // 개발용
   if (opts.mode === 'development') {
     return merge(config, {
-      // 추가 개발용 옵션
+      // 빌드 시간이 적고, 디버깅이 가능한 방식
       devtool: 'eval',
       devServer: {
+        // 자동으로 기본 브라우저를 오픈합니다
         open: false,
+        // HMR, https://webpack.js.org/concepts/hot-module-replacement/
         hot: true
       }
     })
-    // 개발용
+
+    // opts.mode === 'production'
   } else {
     return merge(config, {
-      // 추가 제품용 옵션
+      // 용량이 적은 방식
       devtool: 'cheap-module-source-map',
-      plugins: [new CleanWebpackPlugin()]
+      plugins: [
+        // 빌드(build) 직전 `output.path`(`dist` 디렉터리) 내 기존 모든 파일 삭제
+        new CleanWebpackPlugin()
+      ]
     })
   }
   // 제품용
