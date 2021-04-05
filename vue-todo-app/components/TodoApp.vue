@@ -1,7 +1,48 @@
 <template>
-    <div>
-     <todo-item />
-     <todo-creator/>
+    <div class="todo-app">
+      <div class="todo-app__actions">
+        <div class="filters">
+          <button 
+          :class="{ active: filter === 'all'}"
+          @click="changeFilter('all')">
+            모든 항목 ({{total}})
+          </button>
+          <button 
+          :class="{ active: filter === 'active'}"
+          @click="changeFilter('active')">
+            해야할 항목 ({{activeCount}})
+          </button>
+          <button 
+          :class="{ active: filter === 'completed'}"
+          @click="changeFilter('completed')">
+            완료된 항목 ({{completedCount}})
+          </button>
+        </div>
+
+        <div class="actions">
+          <input 
+            v-model="allDone"
+            type="checkbox">
+          <button @click="clearCompleted">완료된 항목 삭제</button>
+        </div>
+      </div>
+
+    <div class="todo-app__list">
+       <todo-item 
+     v-for="todo in filteredTodos"
+     :key="todo.id"
+     :todo="todo"
+     @update-todo="updateTodo"
+     @delete-todo="deleteTodo"
+     />
+    </div>
+
+     <hr />
+
+     <todo-creator 
+     class="todo-app__creator" 
+     @create-todo="createTodo"
+     />
     </div>
 </template>
 
@@ -10,6 +51,12 @@
 import lowdb from 'lowdb'
 import LocalStorage from 'lowdb/adapters/LocalStorage'
 import cryptoRandomString from 'crypto-random-string'
+import _cloneDeep from 'lodash/cloneDeep'
+import _find from 'lodash/find'
+import _assign from 'lodash/assign'
+import _findIdex from 'lodash/findIndex'
+import _forEachRight from 'lodash/forEachRight'
+// import _ from 'lodash'
 import TodoCreator from './TodoCreator'
 import TodoItem from './TodoItem'
 
@@ -20,7 +67,39 @@ export default {
   },
   data () {
     return {
-      db: null
+      db: null,
+      todos:[],
+      filter: 'all'
+    }
+  },
+  computed:{
+    filteredTodos(){
+      switch(this.filter){
+        case 'all':
+        default:   
+          return this.todos
+        case 'active': //해야할 항목
+          return this.todos.filter(todo => !todo.done)
+        case 'completed': //완료된 항목
+          return this.todos.filter(todo => todo.done)
+      }
+    },
+    total(){
+      return this.todos.length
+    },
+    activeCount(){
+      return this.todos.filter(todo => !todo.done).length
+    },
+    completedCount(){
+      return this.total - this.activeCount
+    },
+    allDone:{
+      get(){
+        return this.total === this.completedCount && this.total > 0
+      },
+      set(checked){
+        this.completeAll(checked)
+      }
     }
   },
   created(){
@@ -33,10 +112,20 @@ export default {
 
       //localDB 초기화
       console.log(this.db)
-      this.db
+
+      const hasTodos = this.db.has('todos').value()
+
+      if(hasTodos) {
+        this.todos = _cloneDeep(this.db.getState().todos)
+      }else{
+
+        this.db
       .defaults({
         todos: []  //collection
       }).write()
+      }
+
+      
     },
     createTodo(title){
       const newTodo = {
@@ -46,12 +135,82 @@ export default {
         updatedAt: new Date(),
         done:false
       }
-
+      //create db
       this.db
         .get('todos') //lodash
         .push(newTodo) //lodash
         .write() //lowdb
+      //create clinet
+        this.todos.push(newTodo)
+    },
+    updateTodo(todo,value){
+      this.db
+        .get('todos')
+        .find({ id: todo.id })
+        .assign(value)
+        .write()
+
+      const foundTodo =  _find(this.todos, {id: todo.id})
+      _assign(foundTodo, value)  
+    },
+    deleteTodo(todo){
+      this.db
+        .get('todos')
+        .remove({ id: todo.id })
+        .write()
+
+        const foundIdex = _findIdex(this.todos, {id: todo.id})
+        this.$delete(this.todos, foundIdex )
+    },
+    changeFilter(filter){
+      this.filter = filter
+    },
+    completeAll(checked){
+      //db
+      const newTodos = this.db
+        .get('todos')
+        .forEach(todo => {
+          todo.done = checked
+        })
+        .write()
+
+      //local
+      // this.todos.forEach(todo => {
+      //   todo.done = checked
+      // })
+      this.todos = _cloneDeep(newTodos)
+    },
+    clearCompleted(){
+      // this.todos.forEach(todo => {
+      //   if(todo.done){
+      //     this.deleteTodo(todo)
+      //   }
+      // })
+
+      // this.todos
+      //   .reduce((list, todo, index) => {
+      //     if(todo.done){
+      //       list.push(index)
+      //     }
+      //     return list
+      //   }, [])
+      //   .reverse()
+      //   .forEach(index => {
+      //     this.deleteTodo(this.todos[index])
+      //   })
+
+      _forEachRight(this.todos, todo=>{
+        if(todo.done){
+          this.deleteTodo(todo)
+        }
+      })
     }
   }
 }
 </script>
+
+<style scoped lang="scss" >
+  button.active{
+    font-weight: bold;
+  }
+</style>

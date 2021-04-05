@@ -21,6 +21,14 @@ export default {
     methods:{
         createTodo(){
             console.log(this.title)
+            const validatedTitle = this.title && this.title.trim()
+            if(!validatedTitle){
+                alert('유효하지 않은 제목입니다')
+                this.title = this.title.trim()
+                return
+            }
+            this.$emit('create-todo', this.title)
+            this.title = ''
         }
     }
 }
