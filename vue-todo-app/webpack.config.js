@@ -13,21 +13,11 @@ module.exports = (env, opts) => {
     // 중복되는 옵션들..
     resolve: {
       extensions: ['.vue', '.js'],
-      // alias: {
-      //   path: require.resolve("path-browserify")
-      // },
-      // fallback: {
-      //   // "fs": false,
-      //   // "tls": false,
-      //   // "net": false,
-      //   // "path": false,
-      //   // "zlib": false,
-      //   // "http": false,
-      //   // "https": false,
-      //   "stream": false,
-      //   "crypto": false,
-      //   "crypto-browserify": require.resolve('crypto-browserify'), //if you want to use this module also don't forget npm i crypto-browserify 
-      // }
+      alias: {
+        '~': path.resolve(__dirname),
+        'scss': path.resolve(__dirname, './scss/')
+      }
+
     },
     // 진입점
     entry: {
@@ -36,7 +26,7 @@ module.exports = (env, opts) => {
     // 결과물에 대한 설정
     output: {
       filename: '[name].js', // app.js
-      path: path.join(__dirname, 'dist')
+      path: path.join(__dirname, 'dist'),
     },
     module: {
       rules: [
