@@ -7,7 +7,6 @@ const merge = require('webpack-merge')
 require('@babel/polyfill')
 
 module.exports = (env, opts) => {
-
   const config = {
     mode: 'production',
     // 중복되는 옵션들..
@@ -26,7 +25,7 @@ module.exports = (env, opts) => {
     // 결과물에 대한 설정
     output: {
       filename: '[name].js', // app.js
-      path: path.join(__dirname, 'dist'),
+      path: path.join(__dirname, 'dist')
     },
     module: {
       rules: [

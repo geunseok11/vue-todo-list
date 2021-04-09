@@ -5,14 +5,14 @@
           <router-link
           to="all"
           tag="button">
-            모든 항목 ({{total}})
+            모든 항목 ({{ total}})
           </router-link>
           <router-link
           to="active"
           tag="button">
             해야할 항목 ({{activeCount}})
           </router-link>
-          <router-link 
+          <router-link
           to="completed"
           tag='button'>
             완료된 항목 ({{completedCount}})
@@ -22,12 +22,12 @@
         <div class="actions clearfix">
             <div class="float--left">
               <label>
-                <input 
+                <input
                 v-model="allDone"
                 type="checkbox">
                 <span class="icon"><i class="material-icons">done_all</i></span>
               </label>
-              
+
             </div>
           <div class="float--right clearfix">
             <button class="btn float--left"
@@ -38,9 +38,9 @@
             @click="scrollToBottom">
                <i class="material-icons">expand_more</i>
             </button>
-            <button 
+            <button
             class="btn btn--danger float--left"
-            @click="clearCompleted"> 
+            @click="clearCompleted">
               <i class="material-icons">delete_sweep</i>
                 </button>
           </div>
@@ -48,33 +48,22 @@
       </div>
 
     <div class="todo-app__list">
-       <todo-item 
+       <todo-item
      v-for="todo in filteredTodos"
      :key="todo.id"
      :todo="todo"
-     @update-todo="updateTodo"
-     @delete-todo="deleteTodo"
      />
     </div>
 
-
-     <todo-creator 
-     class="todo-app__creator" 
-     @create-todo="createTodo"
+     <todo-creator
+     class="todo-app__creator"
      />
     </div>
 </template>
 
 <script>
 
-import lowdb from 'lowdb'
-import LocalStorage from 'lowdb/adapters/LocalStorage'
-import cryptoRandomString from 'crypto-random-string'
-import _cloneDeep from 'lodash/cloneDeep'
-import _find from 'lodash/find'
-import _assign from 'lodash/assign'
-import _findIdex from 'lodash/findIndex'
-import _forEachRight from 'lodash/forEachRight'
+import { mapState, mapGetters, mapMutations, mapActions } from 'vuex'
 // import _ from 'lodash'
 import scrollTo from 'scroll-to'
 import TodoCreator from '~/components/TodoCreator'
@@ -85,150 +74,52 @@ export default {
     TodoCreator,
     TodoItem
   },
-  data () {
-    return {
-      db: null,
-      todos:[],
-    }
-  },
-  computed:{
-    filteredTodos(){
-      switch(this.$route.params.id){
-        case 'all':
-        default:   
-          return this.todos
-        case 'active': //해야할 항목
-          return this.todos.filter(todo => !todo.done)
-        case 'completed': //완료된 항목
-          return this.todos.filter(todo => todo.done)
-      }
-    },
-    total(){
-      return this.todos.length
-    },
-    activeCount(){
-      return this.todos.filter(todo => !todo.done).length
-    },
-    completedCount(){
-      return this.total - this.activeCount
-    },
-    allDone:{
-      get(){
+  computed: {
+    // helpers
+    ...mapState('todoApp', [
+      'todos'
+    ]),
+    ...mapGetters('todoApp', [
+      'total',
+      'activeCount',
+      'completedCount',
+      'filteredTodos'
+    ]),
+
+    allDone: {
+      get () {
         return this.total === this.completedCount && this.total > 0
       },
-      set(checked){
+      set (checked) {
         this.completeAll(checked)
       }
     }
   },
-  created(){
+  watch: {
+    $route () {
+      this.updateFilter(this.$route.params.id)
+    }
+  },
+  created () {
     this.initDB()
   },
   methods: {
-    initDB () {
-      const adapter = new LocalStorage('todo-app')
-      this.db = lowdb(adapter)
-
-      //localDB 초기화
-      console.log(this.db)
-
-      const hasTodos = this.db.has('todos').value()
-
-      if(hasTodos) {
-        this.todos = _cloneDeep(this.db.getState().todos)
-      }else{
-
-        this.db
-      .defaults({
-        todos: []  //collection
-      }).write()
-      }
-
-      
-    },
-    createTodo(title){
-      const newTodo = {
-        id: cryptoRandomString({length: 10}),
-        title,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        done:false
-      }
-      //create db
-      this.db
-        .get('todos') //lodash
-        .push(newTodo) //lodash
-        .write() //lowdb
-      //create clinet
-        this.todos.push(newTodo)
-    },
-    updateTodo(todo,value){
-      this.db
-        .get('todos')
-        .find({ id: todo.id })
-        .assign(value)
-        .write()
-
-      const foundTodo =  _find(this.todos, {id: todo.id})
-      _assign(foundTodo, value)  
-    },
-    deleteTodo(todo){
-      this.db
-        .get('todos')
-        .remove({ id: todo.id })
-        .write()
-
-        const foundIdex = _findIdex(this.todos, {id: todo.id})
-        this.$delete(this.todos, foundIdex )
-    },
-    completeAll(checked){
-      //db
-      const newTodos = this.db
-        .get('todos')
-        .forEach(todo => {
-          todo.done = checked
-        })
-        .write()
-
-      //local
-      // this.todos.forEach(todo => {
-      //   todo.done = checked
-      // })
-      this.todos = _cloneDeep(newTodos)
-    },
-    clearCompleted(){
-      // this.todos.forEach(todo => {
-      //   if(todo.done){
-      //     this.deleteTodo(todo)
-      //   }
-      // })
-
-      // this.todos
-      //   .reduce((list, todo, index) => {
-      //     if(todo.done){
-      //       list.push(index)
-      //     }
-      //     return list
-      //   }, [])
-      //   .reverse()
-      //   .forEach(index => {
-      //     this.deleteTodo(this.todos[index])
-      //   })
-
-      _forEachRight(this.todos, todo=>{
-        if(todo.done){
-          this.deleteTodo(todo)
-        }
+    ...mapMutations('todoApp', [
+      'updateFilter'
+    ]),
+    ...mapActions('todoApp', [
+      'initDB',
+      'completeAll',
+      'clearCompleted'
+    ]),
+    scrollToTop () {
+      scrollTo(0, 0, {
+        ease: 'linear'
       })
     },
-    scrollToTop(){
-      scrollTo(0,0, {
-        ease:'linear',
-      })
-    },
-    scrollToBottom(){
+    scrollToBottom () {
       scrollTo(0, document.body.scrollHeight, {
-        ease:'linear',
+        ease: 'linear'
       })
     }
   }
